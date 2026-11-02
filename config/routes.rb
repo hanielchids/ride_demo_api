@@ -4,11 +4,9 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :drivers, only: %i[index show]
-      resources :trips, only: %i[index show]
-      # Feature to add during the recording:
-      # resources :trips, only: [] do
-      #   resource :rating, only: :create
-      # end
+      resources :trips, only: %i[index show] do
+        resource :rating, only: :create
+      end
     end
   end
 end

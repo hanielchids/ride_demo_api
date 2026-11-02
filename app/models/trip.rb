@@ -3,6 +3,7 @@ class Trip < ApplicationRecord
 
   belongs_to :driver
   belongs_to :passenger
+  has_one :rating, dependent: :destroy
 
   validates :pickup, :dropoff, :scheduled_at, presence: true
   validates :status, inclusion: { in: STATUSES }

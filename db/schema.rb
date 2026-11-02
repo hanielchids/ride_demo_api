@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_01_000003) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_02_231331) do
   create_table "drivers", force: :cascade do |t|
     t.string "name", null: false
     t.string "vehicle", null: false
@@ -28,6 +28,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_01_000003) do
     t.index ["email"], name: "index_passengers_on_email", unique: true
   end
 
+  create_table "ratings", force: :cascade do |t|
+    t.integer "trip_id", null: false
+    t.integer "score", null: false
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["trip_id"], name: "index_ratings_on_trip_id", unique: true
+  end
+
   create_table "trips", force: :cascade do |t|
     t.integer "driver_id", null: false
     t.integer "passenger_id", null: false
@@ -43,6 +52,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_01_000003) do
     t.index ["status"], name: "index_trips_on_status"
   end
 
+  add_foreign_key "ratings", "trips"
   add_foreign_key "trips", "drivers"
   add_foreign_key "trips", "passengers"
 end
