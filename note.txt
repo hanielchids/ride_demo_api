@@ -1,0 +1,116 @@
+ t.references :trip, null: false, foreign_key: true, index: { unique: true }
+      t.integer :score, null: false
+      t.text :comment
+
+
+require "rails_helper"
+
+RSpec.describe "POST /api/v1/trips/:trip_id/rating", type: :request do
+  let(:trip) { create_trip(status: "completed") }
+
+  it "creates a rating for a completed trip" do
+    post "/api/v1/trips/#{trip.id}/rating", params: { rating: { score: 5, comment: "Smooth trip" } }
+
+    expect(response).to have_http_status(:created)
+    expect(JSON.parse(response.body)).to include("score" => 5, "trip_id" => trip.id)
+  end
+
+  it "rejects a trip that is not completed" do
+    trip = create_trip(status: "scheduled", scheduled_at: 1.hour.from_now)
+
+    post "/api/v1/trips/#{trip.id}/rating", params: { rating: { score: 4 } }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(JSON.parse(response.body)["errors"].join).to include("completed")
+  end
+
+  it "rejects a second rating for the same trip" do
+    post "/api/v1/trips/#{trip.id}/rating", params: { rating: { score: 5 } }
+    post "/api/v1/trips/#{trip.id}/rating", params: { rating: { score: 3 } }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(trip.reload.rating.score).to eq(5)
+  end
+
+  it "rejects a score outside 1 to 5" do
+    post "/api/v1/trips/#{trip.id}/rating", params: { rating: { score: 9 } }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+  end
+end
+
+resources :trips, only: %i[index show] do
+    resource :rating, only: :create
+end
+
+
+class Rating < ApplicationRecord
+  belongs_to :trip
+
+  validates :score, presence: true, inclusion: { in: 1..5 }
+  validates :comment, length: { maximum: 500 }
+  validates :trip_id, uniqueness: { message: "has already been rated" }
+  validate :trip_must_be_completed
+
+  private
+
+  def trip_must_be_completed
+    return if trip.nil? || trip.completed?
+
+    errors.add(:trip, "must be completed before it can be rated")
+  end
+end
+
+
+module Api
+  module V1
+    class RatingsController < ApplicationController
+      def create
+        trip = Trip.find(params[:trip_id])
+        rating = Rating.new(rating_params)
+        rating.trip = trip
+
+        if rating.save
+          render json: RatingSerializer.new(rating).as_json, status: :created
+        else
+          render json: { errors: rating.errors.full_messages }, status: :unprocessable_entity
+        end
+      end
+
+      private
+
+      def rating_params
+        params.require(:rating).permit(:score, :comment)
+      end
+    end
+  end
+end
+
+class RatingSerializer
+  def initialize(rating) = @rating = rating
+
+  def as_json(*)
+    {
+      id: @rating.id,
+      trip_id: @rating.trip_id,
+      score: @rating.score,
+      comment: @rating.comment,
+      created_at: @rating.created_at
+    }
+  end
+end
+
+  it "exposes the driver's average rating and count" do
+    driver = create_driver
+    Rating.create!(trip: create_trip(driver:), score: 5)
+    Rating.create!(trip: create_trip(driver:), score: 4)
+
+    get "/api/v1/drivers/#{driver.id}"
+
+    expect(JSON.parse(response.body)).to include("average_rating" => 4.5, "ratings_count" => 2)
+  end
+
+
+       completed_trips: @driver.trips.completed.count,
+      average_rating: @driver.ratings.average(:score)&.to_f&.round(1),
+      ratings_count: @driver.ratings.count

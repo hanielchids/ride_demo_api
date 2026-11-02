@@ -1,0 +1,22 @@
+{
+  "info": {
+    "name": "Ride Demo API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "base_url", "value": "http://localhost:3000" }],
+  "item": [
+    { "name": "List drivers", "request": { "method": "GET", "url": "{{base_url}}/api/v1/drivers" } },
+    { "name": "Show driver 1", "request": { "method": "GET", "url": "{{base_url}}/api/v1/drivers/1" } },
+    { "name": "List completed trips", "request": { "method": "GET", "url": "{{base_url}}/api/v1/trips?status=completed" } },
+    { "name": "Show trip 1", "request": { "method": "GET", "url": "{{base_url}}/api/v1/trips/1" } },
+    {
+      "name": "Create rating (add during task)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/v1/trips/1/rating",
+        "body": { "mode": "raw", "raw": "{ \"rating\": { \"score\": 5, \"comment\": \"Smooth trip, on time.\" } }" }
+      }
+    }
+  ]
+}
